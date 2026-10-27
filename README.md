@@ -8,6 +8,7 @@ rest, using only a noisy pose sensor. Simulated in MuJoCo.
 **85% of 300 randomized throws caught and brought to rest** (2–15 cm/s drift, 0–30°/s spin about
 a random axis, from either side), with a median contact speed of 1.9 cm/s and 2.5 N of grip.
 
+- Project page: [zero-g-catch.vercel.app](https://zero-g-catch.vercel.app)
 - One-page write-up: [docs/writeup.md](docs/writeup.md)
 - Demo video (42 s): [docs/media/catch_demo.mp4](docs/media/catch_demo.mp4)
 

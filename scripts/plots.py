@@ -1,10 +1,11 @@
 """Hour 9: result figures from the Monte Carlo CSV, plus one example throw.
 
-    python -m scripts.plots [--csv out/monte_carlo_300.csv]
+    python -m scripts.plots [--csv out/monte_carlo_300.csv] [--theme light|dark]
 
 Writes out/fig_success.png (catch rate vs speed, spin and direction), out/fig_outcomes.png
 (what happened, by speed), out/fig_contact.png (contact speed and finger kick at the grasp) and
-out/fig_example.png (one throw, ground truth, phases shaded).
+out/fig_example.png (one throw, ground truth, phases shaded). `--theme dark` writes
+out/fig_*_dark.png for the project page (navy surface, validated orange / blue / teal marks).
 """
 
 import argparse
@@ -20,21 +21,36 @@ import numpy as np
 from scripts.monte_carlo import SEED0, rate, sample_throw
 from sim.evaluate import run_throw
 
-# Reference palette (light): categorical slots in fixed order, text inks, recessive grid.
-BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
-INK, INK2, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#8a8984", "#e4e3df", "#ffffff"
-
-plt.rcParams.update({
-    "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
-    "axes.edgecolor": GRID, "axes.labelcolor": INK2, "axes.titlecolor": INK,
-    "axes.titlesize": 11, "axes.titleweight": "bold", "axes.titlelocation": "left",
-    "axes.labelsize": 9.5, "xtick.color": INK2, "ytick.color": INK2,
-    "xtick.labelsize": 9, "ytick.labelsize": 9, "axes.grid": True, "grid.color": GRID,
-    "grid.linewidth": 0.8, "axes.axisbelow": True, "axes.spines.top": False,
-    "axes.spines.right": False, "lines.linewidth": 1.6, "font.size": 9.5, "legend.frameon": False,
-    "legend.fontsize": 9,
-})
+# Categorical slots in fixed order (validated per surface), text inks, recessive grid, the text
+# colour that sits on slot 1, and the phase bands for the example throw.
+THEMES = {
+    "light": dict(
+        S1="#2a78d6", S2="#eb6834", S3="#1baf7a", INK="#0b0b0b", INK2="#52514e", MUTED="#8a8984",
+        GRID="#e4e3df", SURFACE="#ffffff", ON_S1="#ffffff", SUFFIX="",
+        BANDS=["#eef4fc", "#e3eefa", "#d6e6f8", "#fdeee6", "#e5f6ef", "#f3f3f1"]),
+    "dark": dict(
+        S1="#c87a0a", S2="#4f6af0", S3="#20a08a", INK="#d5d7da", INK2="#a9acb3", MUTED="#7c7f89",
+        GRID="#2e3040", SURFACE="#1d1e28", ON_S1="#1d1e28", SUFFIX="_dark",
+        BANDS=["#232536", "#262a42", "#2a2f4c", "#33291f", "#1f3132", "#25262f"]),
+}
 OUT = Path("out")
+
+
+def apply_theme(name):
+    globals().update(THEMES[name])
+    plt.rcParams.update({
+        "figure.facecolor": SURFACE, "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE,
+        "axes.edgecolor": GRID, "axes.labelcolor": INK2, "axes.titlecolor": INK,
+        "axes.titlesize": 11, "axes.titleweight": "bold", "axes.titlelocation": "left",
+        "axes.labelsize": 9.5, "xtick.color": INK2, "ytick.color": INK2, "text.color": INK,
+        "xtick.labelsize": 9, "ytick.labelsize": 9, "axes.grid": True, "grid.color": GRID,
+        "grid.linewidth": 0.8, "axes.axisbelow": True, "axes.spines.top": False,
+        "axes.spines.right": False, "lines.linewidth": 1.6, "font.size": 9.5,
+        "legend.frameon": False, "legend.fontsize": 9, "legend.labelcolor": INK2,
+    })
+
+
+apply_theme("light")
 
 
 def load(path):
@@ -77,8 +93,8 @@ def fig_success(rows):
         x = np.arange(len(bins))
         for xi, (lo, hi, k, m) in zip(x, bins):
             p, a, b = wilson(k, m)
-            ax.plot([xi, xi], [100 * a, 100 * b], color=BLUE, lw=2, solid_capstyle="round")
-            ax.plot(xi, 100 * p, "o", ms=8, color=BLUE, mec=SURFACE, mew=2, zorder=3)
+            ax.plot([xi, xi], [100 * a, 100 * b], color=S1, lw=2, solid_capstyle="round")
+            ax.plot(xi, 100 * p, "o", ms=8, color=S1, mec=SURFACE, mew=2, zorder=3)
             ax.annotate(f"{100 * p:.0f}%", (xi, 100 * p), xytext=(9, 0),
                         textcoords="offset points", va="center", color=INK, fontsize=9)
             ax.text(xi, 41, f"n={m}", ha="center", color=MUTED, fontsize=8)
@@ -93,15 +109,14 @@ def fig_success(rows):
                  f"dashed: all throws, {100 * p_all:.0f}%)",
                  x=0.01, ha="left", fontsize=12, fontweight="bold", color=INK)
     fig.tight_layout()
-    fig.savefig(OUT / "fig_success.png", dpi=150)
+    fig.savefig(OUT / f"fig_success{SUFFIX}.png", dpi=150)
     plt.close(fig)
 
 
 def fig_outcomes(rows):
     edges = [2, 5, 8, 11, 15.001]
-    groups = [("caught", ("caught",), BLUE), ("no reachable catch", ("no_plan",), ORANGE),
-              ("aborted (estimate too far off to close)", ("aborted",), AQUA),
-              ("held but not at rest / out of time", ("not_at_rest", "timeout"), YELLOW)]
+    groups = [("caught", ("caught",), S1), ("no reachable catch", ("no_plan",), S2),
+              ("aborted, not at rest or out of time", ("aborted", "not_at_rest", "timeout"), S3)]
     labels, fracs = [], []
     for lo, hi in zip(edges[:-1], edges[1:]):
         sel = [r for r in rows if lo <= r["speed_cms"] < hi]
@@ -117,17 +132,17 @@ def fig_outcomes(rows):
         for yi, l, w in zip(y, left, fracs[:, j]):
             if w >= 6:
                 ax.text(l + w / 2, yi, f"{w:.0f}%", ha="center", va="center",
-                        color=SURFACE if j == 0 else INK, fontsize=8.5)
+                        color=ON_S1 if j == 0 else INK, fontsize=8.5)
         left += fracs[:, j]
     ax.set_yticks(y, labels)
     ax.set_xlim(0, 100)
     ax.set_xlabel("share of throws (%)")
     ax.grid(axis="y", visible=False)
-    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=4, handlelength=1, fontsize=8.5,
+    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncol=3, handlelength=1, fontsize=8.5,
               columnspacing=1.2)
     ax.set_title("What happened, by drift speed", pad=28)
     fig.tight_layout()
-    fig.savefig(OUT / "fig_outcomes.png", dpi=150)
+    fig.savefig(OUT / f"fig_outcomes{SUFFIX}.png", dpi=150)
     plt.close(fig)
 
 
@@ -142,7 +157,7 @@ def fig_contact(rows):
         (axes[1], kick, np.arange(0, 10.01, 0.5), "change in the bar's velocity (cm/s)",
          "Kick the closing fingers give the bar"),
     ):
-        ax.hist(data, bins=bins, color=BLUE, edgecolor=SURFACE, linewidth=1.5)
+        ax.hist(data, bins=bins, color=S1, edgecolor=SURFACE, linewidth=1.5)
         med = np.median(data)
         ax.axvline(med, color=INK, lw=1.2)
         ax.annotate(f"median {med:.1f}", (med, ax.get_ylim()[1] * 0.92), xytext=(-5, 0),
@@ -157,7 +172,7 @@ def fig_contact(rows):
     fig.text(0.01, 0.01, f"{len(g)} throws where the gripper closed; ground truth",
              color=MUTED, fontsize=8)
     fig.tight_layout(rect=(0, 0.04, 1, 1))
-    fig.savefig(OUT / "fig_contact.png", dpi=150)
+    fig.savefig(OUT / f"fig_contact{SUFFIX}.png", dpi=150)
     plt.close(fig)
 
 
@@ -168,9 +183,8 @@ def pick_example(rows):
     return int(min(ok, key=lambda r: r["throw"])["throw"])
 
 
-PHASES = [("approach", "approach", "#eef4fc"), ("ride", "ride", "#e3eefa"),
-          ("close_in", "close in", "#d6e6f8"), ("grasp", "fingers close", "#fdeee6"),
-          ("brake", "brake", "#e5f6ef"), ("stopped", "at rest", "#f3f3f1")]
+PHASES = [("approach", "approach"), ("ride", "ride"), ("close_in", "close in"),
+          ("grasp", "fingers close"), ("brake", "brake"), ("stopped", "at rest")]
 
 
 def fig_example(throw):
@@ -181,21 +195,21 @@ def fig_example(throw):
     t = L["t"]
     fig, axes = plt.subplots(5, 1, figsize=(9, 9.5), sharex=True)
     series = [(L["dist"] * 100, "tool point to bar centre (cm)", "linear"),
-              (np.maximum(L["rel_speed"] * 100, 0.05), "gripper vs its target on the bar (cm/s)", "log"),
+              (np.maximum(L["rel_speed"] * 100, 0.05), "gripper vs target (cm/s)", "log"),
               (L["speed"] * 100, "bar drift speed (cm/s)", "linear"),
               (L["spin"], "bar spin (deg/s)", "linear"),
               (L["force"], "grip force on bar (N)", "linear")]
     for ax, (y, label, scale) in zip(axes, series):
-        for key, _, color in PHASES:
+        for (key, _), color in zip(PHASES, BANDS):
             sel = L["phase"] == key
             if sel.any():
                 ax.axvspan(t[sel][0], t[sel][-1], color=color, lw=0)
-        ax.plot(t, y, color=BLUE)
+        ax.plot(t, y, color=S1)
         ax.set_yscale(scale)
         ax.set_ylabel(label, fontsize=8.5)
         ax.grid(axis="x", visible=False)
     top = axes[0]
-    for key, name, _ in PHASES:
+    for key, name in PHASES:
         sel = L["phase"] == key
         if sel.any():
             top.text((t[sel][0] + t[sel][-1]) / 2, 1.03, name, transform=top.get_xaxis_transform(),
@@ -210,7 +224,7 @@ def fig_example(throw):
     fig.text(0.01, 0.005, f"planned {c.plan.planned_at:.2f} s after release for a catch at "
              f"{c.plan.t:.2f} s; brought to rest in {c.brake_T:.2f} s", color=MUTED, fontsize=8)
     fig.tight_layout(rect=(0, 0.015, 1, 0.97))
-    fig.savefig(OUT / "fig_example.png", dpi=150)
+    fig.savefig(OUT / f"fig_example{SUFFIX}.png", dpi=150)
     plt.close(fig)
 
 
@@ -218,7 +232,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", default="out/monte_carlo_300.csv")
     ap.add_argument("--example", type=int, default=None, help="throw index for fig_example")
+    ap.add_argument("--theme", choices=list(THEMES), default="light")
     args = ap.parse_args()
+    apply_theme(args.theme)
     rows = load(args.csv)
     OUT.mkdir(exist_ok=True)
     fig_success(rows)
@@ -228,7 +244,7 @@ def main():
     fig_example(throw)
     n, k = len(rows), sum(r["outcome"] == "caught" for r in rows)
     print(f"{args.csv}: caught {rate(k, n)}; example throw {throw}")
-    print("saved out/fig_success.png, fig_outcomes.png, fig_contact.png, fig_example.png")
+    print(f"saved out/fig_{{success,outcomes,contact,example}}{SUFFIX}.png")
 
 
 if __name__ == "__main__":

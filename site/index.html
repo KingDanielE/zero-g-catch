@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zero-G Catch</title>
+  <meta name="description" content="A Franka Panda catches a drifting, tumbling object in zero gravity and brings it to rest. Estimation, intercept planning, a gentle grasp and a compliant stop, tested over 300 randomized throws in MuJoCo.">
+  <meta property="og:title" content="Zero-G Catch">
+  <meta property="og:description" content="85% of 300 randomized zero-g throws caught and brought to rest, in simulation.">
+  <meta property="og:image" content="media/demo_poster.jpg">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231d1e28'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23233de2' stroke-width='2'/%3E%3Crect x='13' y='9' width='6' height='14' rx='1' fill='%23f79915' transform='rotate(35 16 16)'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <a class="nav-mark" href="#top" aria-label="Zero-G Catch, back to top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="9" width="6" height="14" rx="1" fill="var(--yellow)" transform="rotate(35 16 16)"/></svg>
+      <span>Zero-G Catch</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#demo">Demo</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="https://github.com/KingDanielE/zero-g-catch">Code</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="horizon" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <p class="eyebrow">Autonomous capture · simulation study</p>
+        <h1 id="hero-title">Catching a drifting<br>object in zero-g</h1>
+        <p class="lede">A fixed-base robot arm catches a tumbling bar that drifts past it, seen only
+          through a noisy sensor, and brings it to rest without knocking it away.</p>
+        <div class="ctas">
+          <a class="btn btn-solid" href="#demo">Watch the catch</a>
+          <a class="btn btn-ghost" href="https://github.com/KingDanielE/zero-g-catch">Read the code</a>
+        </div>
+      </div>
+      <dl class="telemetry" aria-label="Test conditions">
+        <div><dt>Drift</dt><dd>2–15 cm/s</dd></div>
+        <div><dt>Spin</dt><dd>0–30°/s</dd></div>
+        <div><dt>Sensor</dt><dd>30 Hz · 5 mm · 2°</dd></div>
+        <div><dt>Throws</dt><dd>N = 300</dd></div>
+      </dl>
+    </section>
+
+    <section class="stats" aria-label="Headline results">
+      <div class="stat">
+        <p class="stat-value">85<span>%</span></p>
+        <p class="stat-label">caught and brought to rest</p>
+        <p class="stat-note">95% CI 80–88 · 300 throws</p>
+      </div>
+      <div class="stat">
+        <p class="stat-value">1.9<span>cm/s</span></p>
+        <p class="stat-label">contact speed at grasp</p>
+        <p class="stat-note">median · worst 2.3</p>
+      </div>
+      <div class="stat">
+        <p class="stat-value">2.5<span>N</span></p>
+        <p class="stat-label">peak grip force</p>
+        <p class="stat-note">slip in the grip 0.75 mm</p>
+      </div>
+      <div class="stat">
+        <p class="stat-value">0.68<span>s</span></p>
+        <p class="stat-label">to bring it to rest</p>
+        <p class="stat-note">≤ 0.3 m/s² · ≤ 1 rad/s²</p>
+      </div>
+    </section>
+
+    <section class="section" id="demo" aria-labelledby="demo-title">
+      <div class="section-head">
+        <p class="eyebrow">01 · Demo</p>
+        <h2 id="demo-title">Close in, match, hold</h2>
+      </div>
+      <figure class="frame">
+        <video class="loop" src="media/grasp_loop.mp4" poster="media/grasp_poster.jpg" autoplay muted loop playsinline aria-label="Quarter-speed close-up: the gripper slides in, matches the bar's drift and spin, closes and brakes it to rest"></video>
+        <span class="tag tl">14.4 cm/s drift · 28°/s spin</span>
+        <span class="tag tr">1/4 speed</span>
+        <span class="tag bl">Franka Panda · MuJoCo</span>
+        <span class="tag br">Grasp → brake → rest</span>
+      </figure>
+      <div class="demo-full">
+        <p>The full 42-second run: four throws in real time (slow, medium, fast, and one that aborts,
+          backs off and catches on the retry). The blue ball is the planned catch point; the dots
+          are the filter's predicted path.</p>
+        <video controls preload="none" poster="media/demo_poster.jpg" src="media/catch_demo.mp4" aria-label="Full demo video, 42 seconds"></video>
+      </div>
+    </section>
+
+    <section class="section" id="problem" aria-labelledby="problem-title">
+      <div class="section-head">
+        <p class="eyebrow">02 · Problem</p>
+        <h2 id="problem-title">In orbit, a missed catch doesn't fall</h2>
+      </div>
+      <div class="prose">
+        <p>A 5 × 5 × 15 cm, 0.5 kg bar drifts past a 7-DoF arm at 2–15 cm/s while tumbling at up to
+          30°/s. Nothing pulls it back: a bounced object just leaves. So the goal isn't contact, it's
+          a soft capture that ends with the object held and still, using only a 30 Hz pose sensor
+          with 5 mm and 2° of noise and 5% dropped readings.</p>
+      </div>
+    </section>
+
+    <section class="section" id="method" aria-labelledby="method-title">
+      <div class="section-head">
+        <p class="eyebrow">03 · Method</p>
+        <h2 id="method-title">Five stages, one moving frame</h2>
+      </div>
+      <ol class="steps">
+        <li>
+          <span class="step-num">01</span>
+          <h3>Estimate</h3>
+          <p>Kalman filter for position and velocity; sliding-window fit for spin. Velocity within
+            1 cm/s after a median 0.70 s.</p>
+        </li>
+        <li>
+          <span class="step-num">02</span>
+          <h3>Plan the intercept</h3>
+          <p>Sweep capture times along the predicted path. Take the earliest grasp, square to a
+            face, that the arm reaches in time and holds through the stop clear of singularities.</p>
+        </li>
+        <li>
+          <span class="step-num">03</span>
+          <h3>Ride along</h3>
+          <p>Work in the bar's moving, spinning frame: line up behind it, ride 10 cm back, then
+            slide in matching drift and spin.</p>
+        </li>
+        <li>
+          <span class="step-num">04</span>
+          <h3>Grasp only if safe</h3>
+          <p>Close only when the estimated miss is under 1 cm and 2 cm/s; otherwise back off and
+            re-plan. Fingers close fast, then slowly through contact.</p>
+        </li>
+        <li>
+          <span class="step-num">05</span>
+          <h3>Stop gently</h3>
+          <p>Bring drift and spin to rest together on a smooth profile, so the grip only supplies
+            a small, steady force.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" id="results" aria-labelledby="results-title">
+      <div class="section-head">
+        <p class="eyebrow">04 · Results</p>
+        <h2 id="results-title">300 randomized throws</h2>
+        <p class="section-sub">Speed, direction (within 30° of straight across, from either side),
+          spin axis and rate, start pose and sensor noise all random. Scored on ground truth: held
+          between both fingers at under 0.5 cm/s and 2°/s.</p>
+      </div>
+      <div class="figs">
+        <figure class="fig">
+          <img src="media/fig_success.png" width="1650" height="540" loading="lazy" alt="Catch rate by drift speed: 86% at 2–5 cm/s, 93% at 5–8, 88% at 8–11, 76% at 11–15. By spin: 85%, 86%, 83% across 0–30°/s. By direction: 91%, 89%, 81% from 0 to 30° off straight across.">
+          <figcaption><strong>Spin hardly matters; speed does.</strong> Matching the spin is handled by
+            working in the bar's frame. The fastest throws are the hardest.</figcaption>
+        </figure>
+        <figure class="fig">
+          <img src="media/fig_outcomes.png" width="1350" height="510" loading="lazy" alt="Outcomes by speed. Caught: 86%, 93%, 88%, 76%. No reachable catch rises to 18% at 11–15 cm/s.">
+          <figcaption><strong>Fast throws fail upstream.</strong> At 11–15 cm/s, 18% pass faster than
+            the arm can get there; the grasp itself almost never fails.</figcaption>
+        </figure>
+        <figure class="fig">
+          <img src="media/fig_contact.png" width="1500" height="525" loading="lazy" alt="Histograms: contact speed when the gripper starts closing, median 1.9 cm/s, all under 2.3; kick from the closing fingers, median 3.3 cm/s.">
+          <figcaption><strong>Soft contact.</strong> The gripper meets the bar at a median 1.9 cm/s,
+            just under the 2 cm/s gate on the estimate.</figcaption>
+        </figure>
+        <figure class="fig">
+          <img src="media/fig_example.png" width="1350" height="1425" loading="lazy" alt="One throw at 11.6 cm/s and 17°/s from release to rest: the tool point closes from 45 cm to 1 cm, grip force builds to 2.5 N, and drift and spin fall to zero during braking.">
+          <figcaption><strong>One throw, release to rest.</strong> Approach, ride along, close in,
+            fingers close, brake: the bar goes from 11.6 cm/s and 17°/s to still in 0.71 s.</figcaption>
+        </figure>
+      </div>
+      <table class="outcomes">
+        <caption>Where the 300 throws went</caption>
+        <tbody>
+          <tr><th scope="row">Caught and brought to rest</th><td>254</td><td>85%</td></tr>
+          <tr><th scope="row">No reachable catch</th><td>25</td><td>8%</td></tr>
+          <tr><th scope="row">Aborted at the grasp gate</th><td>16</td><td>5%</td></tr>
+          <tr><th scope="row">Held but still turning, or out of time</th><td>5</td><td>2%</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="lessons" aria-labelledby="lessons-title">
+      <div class="section-head">
+        <p class="eyebrow">05 · What testing changed</p>
+        <h2 id="lessons-title">Found in simulation, fixed in code</h2>
+      </div>
+      <div class="lessons">
+        <article>
+          <p class="lesson-k">Spin 20 → 44°/s</p>
+          <h3>The hand chased itself</h3>
+          <p>Once the fingers touched, the estimator saw the hand moving the bar and the hand
+            followed the estimate. Freezing the target motion when closing starts fixed it.</p>
+        </article>
+        <article>
+          <p class="lesson-k">Kick 5.6 → 3.8 cm/s</p>
+          <h3>Close in two speeds</h3>
+          <p>Fast to 5 mm short of the bar, then slowly through contact. The worst-case kick
+            halved, from 10.6 to 5.3 cm/s.</p>
+        </article>
+        <article>
+          <p class="lesson-k">Caught 65 → 85%</p>
+          <h3>Plan again, try every grasp</h3>
+          <p>The planner committed to a grasp from above and gave up after one try. Trying each
+            face and re-planning after a miss lifted the catch rate without touching the grasp.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="next" aria-labelledby="next-title">
+      <div class="section-head">
+        <p class="eyebrow">06 · Limits</p>
+        <h2 id="next-title">What comes next</h2>
+      </div>
+      <ul class="limits">
+        <li><span>Force control.</span> The stop is position control with bounded deceleration;
+          a wrist force/torque sensor with admittance control is the next step.</li>
+        <li><span>Joint limits.</span> The approach clips at limits instead of avoiding them,
+          behind some of the aborts.</li>
+        <li><span>Real-time planning.</span> About 0.5 s of pure-Python IK while the simulation
+          waits; compiled IK or a reachability map would remove it.</li>
+        <li><span>Perception.</span> A known rigid box and a pose sensor; vision, unknown inertia
+          and a free-floating base are the obvious extensions.</li>
+      </ul>
+    </section>
+
+    <section class="cta-band" aria-label="Links">
+      <h2>Code, write-up, data</h2>
+      <div class="ctas">
+        <a class="btn btn-solid" href="https://github.com/KingDanielE/zero-g-catch">GitHub repository</a>
+        <a class="btn btn-ghost" href="https://github.com/KingDanielE/zero-g-catch/blob/main/docs/writeup.md">One-page write-up</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Zero-G Catch · Python, MuJoCo, Franka Panda from MuJoCo Menagerie</p>
+    <p>Independent project. Not affiliated with or endorsed by Icarus Robotics.</p>
+  </footer>
+</body>
+</html>
