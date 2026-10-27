@@ -1,0 +1,37 @@
+<mujoco model="zero-g catch">
+  <!-- Franka Panda from MuJoCo Menagerie, fixed base at the origin. -->
+  <include file="../third_party/menagerie/franka_emika_panda/panda.xml"/>
+  <compiler meshdir="../third_party/menagerie/franka_emika_panda/assets"/>
+
+  <!-- Zero gravity, no air drag. -->
+  <option timestep="0.002" gravity="0 0 0" density="0" viscosity="0"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <global azimuth="150" elevation="-15"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.05 0.07 0.12" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="grid" builtin="checker" mark="edge" rgb1="0.15 0.17 0.2" rgb2="0.12 0.14 0.17"
+      markrgb="0.5 0.5 0.5" width="300" height="300"/>
+    <material name="grid" texture="grid" texuniform="true" texrepeat="4 4" reflectance="0.1"/>
+    <material name="target" rgba="0.95 0.55 0.1 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 2" dir="0 0 -1" directional="true"/>
+    <!-- Visual reference plane only (contype/conaffinity 0): nothing rests on it. -->
+    <geom name="deck" type="plane" size="2 2 0.05" pos="0 0 -0.01" material="grid" contype="0" conaffinity="0"/>
+
+    <!-- The drifting object: a 5 x 5 x 15 cm bar (fits the 8 cm gripper), 0.5 kg. -->
+    <body name="target" pos="0.6 -0.5 0.5">
+      <freejoint name="target_free"/>
+      <geom name="target_geom" type="box" size="0.025 0.025 0.075" mass="0.5" material="target"
+        friction="1 0.005 0.0001"/>
+      <site name="target_center" size="0.005" rgba="1 1 1 1"/>
+    </body>
+
+    <camera name="overview" pos="1.8 -1.4 1.2" xyaxes="0.6 0.8 0 -0.3 0.22 0.93"/>
+  </worldbody>
+</mujoco>
