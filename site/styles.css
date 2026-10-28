@@ -310,20 +310,41 @@ p { margin: 0; }
 .limits li { padding: 18px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
 .limits span { color: var(--light); text-transform: uppercase; font-size: 14px; letter-spacing: 0.04em; margin-right: 6px; }
 
-/* Closing band */
-.cta-band {
-  margin-top: clamp(72px, 10vw, 128px);
-  padding: clamp(56px, 8vw, 96px) var(--gutter);
-  text-align: center;
+/* Contact */
+#contact { padding-bottom: clamp(72px, 10vw, 128px); }
+.contact {
   display: grid;
-  gap: 24px;
-  justify-items: center;
-  background:
-    radial-gradient(ellipse at 50% 140%, rgba(35, 61, 226, 0.55), transparent 60%),
-    var(--dark);
+  grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
 }
-.cta-band h2 { font-size: clamp(26px, 3.4vw, 40px); }
+.contact a {
+  display: grid;
+  gap: 10px;
+  padding: 26px 24px 28px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  background:
+    radial-gradient(ellipse at 50% 160%, rgba(35, 61, 226, 0.28), transparent 70%),
+    var(--dark);
+  transition: background 0.15s;
+}
+.contact a:first-child { background: radial-gradient(ellipse at 50% 160%, rgba(247, 153, 21, 0.22), transparent 70%), var(--dark); }
+.contact a:hover { background-color: var(--dark-2); }
+.contact-k {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+.contact-v { font-size: 19px; color: var(--light); overflow-wrap: anywhere; }
+.contact a:hover .contact-v { color: var(--yellow); }
+.contact-more { margin-top: 20px; font-size: 15px; color: var(--muted); }
+.contact-more a { color: var(--light); }
+.contact-more a:hover, .footer a:hover { color: var(--yellow); }
+.footer a { color: var(--light); text-decoration: none; }
 
 .footer {
   padding: 28px var(--gutter) 36px;
@@ -347,6 +368,7 @@ p { margin: 0; }
   .steps { column-gap: 32px; }
   .lessons { grid-template-columns: 1fr; }
   .demo-full { grid-template-columns: 1fr; }
+  .contact { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -364,3 +386,21 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Link to the live simulation */
+.live-card {
+  margin-top: 32px;
+  display: grid;
+  gap: 8px;
+  padding: 26px 26px 28px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--yellow);
+  text-decoration: none;
+  background:
+    radial-gradient(ellipse at 100% 120%, rgba(35, 61, 226, 0.35), transparent 60%),
+    var(--dark-2);
+}
+.live-k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--yellow); }
+.live-v { font-size: clamp(22px, 2.6vw, 30px); text-transform: uppercase; color: var(--light); }
+.live-d { font-size: 15px; color: var(--muted); max-width: 720px; }
+.live-card:hover .live-v { color: var(--yellow); }

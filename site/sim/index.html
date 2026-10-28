@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zero-G Catch · Live</title>
+  <meta name="description" content="Throw a tumbling bar at a robot arm in zero gravity and watch it try to catch it, live in your browser: MuJoCo in WebAssembly running the same controller as the Python study.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231d1e28'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23233de2' stroke-width='2'/%3E%3Crect x='13' y='9' width='6' height='14' rx='1' fill='%23f79915' transform='rotate(35 16 16)'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="sim.css">
+  <link rel="modulepreload" href="vendor/mujoco.js">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js" } }
+  </script>
+</head>
+<body class="sim-page">
+  <header class="nav">
+    <a class="nav-mark" href="../" aria-label="Zero-G Catch, project page">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="9" width="6" height="14" rx="1" fill="var(--yellow)" transform="rotate(35 16 16)"/></svg>
+      <span>Zero-G Catch · Live</span>
+    </a>
+    <nav aria-label="Pages">
+      <a href="../">Project</a>
+      <a href="../#results">Results</a>
+      <a href="../#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main class="sim-main">
+    <section class="stage" aria-label="Simulation">
+      <div class="viewport" id="viewport">
+        <canvas id="view" aria-label="3D view of the arm and the bar; drag to rotate, scroll or pinch to zoom"></canvas>
+        <div class="hud hud-tl" aria-live="polite">
+          <p class="hud-phase" id="hud-phase">Loading…</p>
+          <dl class="hud-read">
+            <div><dt>t</dt><dd id="r-time">0.0 s</dd></div>
+            <div><dt>Gripper to bar</dt><dd id="r-dist">–</dd></div>
+            <div><dt>Bar drift</dt><dd id="r-speed">–</dd></div>
+            <div><dt>Spin</dt><dd id="r-spin">–</dd></div>
+            <div><dt>Grip force</dt><dd id="r-force">–</dd></div>
+          </dl>
+        </div>
+        <div class="hud hud-tr">
+          <p class="hud-tag" id="hud-rate">1× real time</p>
+        </div>
+        <div class="outcome" id="outcome" hidden>
+          <p class="outcome-k" id="outcome-k"></p>
+          <p class="outcome-v" id="outcome-v"></p>
+          <p class="outcome-d" id="outcome-d"></p>
+        </div>
+        <div class="loading" id="loading">
+          <p class="eyebrow">Loading the physics engine</p>
+          <p class="loading-note">MuJoCo compiled to WebAssembly, ~3 MB</p>
+          <div class="bar"><span id="load-bar"></span></div>
+        </div>
+        <ul class="legend" aria-label="Legend">
+          <li><span class="dot dot-plan"></span>Planned catch point</li>
+          <li><span class="dot dot-path"></span>Predicted path (from the filter)</li>
+        </ul>
+      </div>
+      <ol class="timeline" id="timeline" aria-label="Phases of this throw"></ol>
+    </section>
+
+    <aside class="panel" aria-labelledby="panel-title">
+      <p class="eyebrow">Throw setup</p>
+      <h1 id="panel-title">Throw it a bar</h1>
+      <p class="panel-sub">Set the throw and watch the arm try to catch it. Every throw is simulated
+        live: the arm sees only a noisy 30 Hz sensor, plans its own catch and closes only when it is
+        sure.</p>
+
+      <form id="setup" class="setup">
+        <label class="ctl">
+          <span class="ctl-k">Drift speed <output id="o-speed"></output></span>
+          <input type="range" id="speed" min="2" max="15" step="0.1" value="8">
+        </label>
+        <label class="ctl">
+          <span class="ctl-k">Spin <output id="o-spin"></output></span>
+          <input type="range" id="spin" min="0" max="30" step="1" value="20">
+        </label>
+        <label class="ctl">
+          <span class="ctl-k">Aim left / right <output id="o-yaw"></output></span>
+          <input type="range" id="yaw" min="-30" max="30" step="1" value="5">
+        </label>
+        <label class="ctl">
+          <span class="ctl-k">Aim up / down <output id="o-pitch"></output></span>
+          <input type="range" id="pitch" min="-20" max="20" step="1" value="0">
+        </label>
+        <fieldset class="ctl seg">
+          <legend class="ctl-k">Thrown from</legend>
+          <label><input type="radio" name="side" value="1" checked><span>Right</span></label>
+          <label><input type="radio" name="side" value="-1"><span>Left</span></label>
+        </fieldset>
+        <fieldset class="ctl seg">
+          <legend class="ctl-k">Sensor noise</legend>
+          <label><input type="radio" name="noise" value="0"><span>None</span></label>
+          <label><input type="radio" name="noise" value="1" checked><span>Normal</span></label>
+          <label><input type="radio" name="noise" value="2"><span>Double</span></label>
+        </fieldset>
+        <div class="actions">
+          <button type="submit" class="btn btn-solid" id="go" disabled>Throw</button>
+          <button type="button" class="btn btn-ghost" id="random" disabled>Random throw</button>
+        </div>
+        <fieldset class="ctl seg">
+          <legend class="ctl-k">Playback</legend>
+          <label><input type="radio" name="rate" value="1" checked><span>1×</span></label>
+          <label><input type="radio" name="rate" value="0.25"><span>¼×</span></label>
+          <label><input type="radio" name="rate" value="2"><span>2×</span></label>
+        </fieldset>
+      </form>
+
+      <div class="tally">
+        <p class="ctl-k">This session</p>
+        <p class="tally-v" id="tally">No throws yet</p>
+        <ol class="history" id="history"></ol>
+      </div>
+
+      <p class="fine">Same controller as the <a href="https://github.com/KingDanielE/zero-g-catch">Python
+        study</a>, ported to JavaScript, with MuJoCo 3.17 compiled to WebAssembly. With sensor noise
+        off, 40 of 40 test throws gave the same outcome, plan and catch times as the Python version;
+        with noise, 86.5% of 200 random throws were caught (Python: 85% of 300). The robot's visual
+        meshes are simplified for the web; its collision shapes and physics are unchanged.</p>
+    </aside>
+  </main>
+
+  <noscript><p class="noscript">This page needs JavaScript and WebAssembly to run the simulation.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

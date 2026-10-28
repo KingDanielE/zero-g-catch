@@ -21,10 +21,12 @@
       <span>Zero-G Catch</span>
     </a>
     <nav aria-label="Sections">
+      <a href="sim/">Live sim</a>
       <a href="#demo">Demo</a>
       <a href="#method">Method</a>
       <a href="#results">Results</a>
       <a href="https://github.com/KingDanielE/zero-g-catch">Code</a>
+      <a href="#contact">Contact</a>
     </nav>
   </header>
 
@@ -37,8 +39,9 @@
         <p class="lede">A fixed-base robot arm catches a tumbling bar that drifts past it, seen only
           through a noisy sensor, and brings it to rest without knocking it away.</p>
         <div class="ctas">
-          <a class="btn btn-solid" href="#demo">Watch the catch</a>
-          <a class="btn btn-ghost" href="https://github.com/KingDanielE/zero-g-catch">Read the code</a>
+          <a class="btn btn-solid" href="sim/">Try it live</a>
+          <a class="btn btn-ghost" href="#demo">Watch the catch</a>
+          <a class="btn btn-ghost" href="cv/Daniel-Engelberg-CV.pdf" target="_blank" rel="noopener">My CV</a>
         </div>
       </div>
       <dl class="telemetry" aria-label="Test conditions">
@@ -90,6 +93,13 @@
           are the filter's predicted path.</p>
         <video controls preload="none" poster="media/demo_poster.jpg" src="media/catch_demo.mp4" aria-label="Full demo video, 42 seconds"></video>
       </div>
+      <a class="live-card" href="sim/">
+        <span class="live-k">Live in your browser</span>
+        <span class="live-v">Throw it a bar yourself →</span>
+        <span class="live-d">Set the speed, spin, aim and sensor noise, and watch the arm try to catch
+          it. The same controller and MuJoCo physics, running in WebAssembly; checked against the
+          Python version throw for throw.</span>
+      </a>
     </section>
 
     <section class="section" id="problem" aria-labelledby="problem-title">
@@ -229,17 +239,35 @@
       </ul>
     </section>
 
-    <section class="cta-band" aria-label="Links">
-      <h2>Code, write-up, data</h2>
-      <div class="ctas">
-        <a class="btn btn-solid" href="https://github.com/KingDanielE/zero-g-catch">GitHub repository</a>
-        <a class="btn btn-ghost" href="https://github.com/KingDanielE/zero-g-catch/blob/main/docs/writeup.md">One-page write-up</a>
+    <section class="section" id="contact" aria-labelledby="contact-title">
+      <div class="section-head">
+        <p class="eyebrow">07 · Contact</p>
+        <h2 id="contact-title">Daniel Engelberg</h2>
+        <p class="section-sub">Mechanical engineer, B.Sc. Technion (robotics specialization).
+          Authorized to work in the US and relocating to New York. I built this project for Icarus
+          Robotics' Mechanical Engineer role.</p>
       </div>
+      <div class="contact">
+        <a href="cv/Daniel-Engelberg-CV.pdf" target="_blank" rel="noopener">
+          <span class="contact-k">CV · PDF, 1 page</span>
+          <span class="contact-v">Download my CV →</span>
+        </a>
+        <a href="mailto:danielengelberg131@gmail.com?subject=Zero-G%20Catch">
+          <span class="contact-k">Email</span>
+          <span class="contact-v">danielengelberg131@gmail.com</span>
+        </a>
+        <a href="https://www.linkedin.com/in/danielengelberg/" target="_blank" rel="noopener">
+          <span class="contact-k">LinkedIn</span>
+          <span class="contact-v">linkedin.com/in/danielengelberg ↗</span>
+        </a>
+      </div>
+      <p class="contact-more">Also: <a href="https://github.com/KingDanielE/zero-g-catch">GitHub repository</a> ·
+        <a href="https://github.com/KingDanielE/zero-g-catch/blob/main/docs/writeup.md">one-page write-up</a></p>
     </section>
   </main>
 
   <footer class="footer">
-    <p>Zero-G Catch · Python, MuJoCo, Franka Panda from MuJoCo Menagerie</p>
+    <p>Zero-G Catch · by Daniel Engelberg · <a href="mailto:danielengelberg131@gmail.com">danielengelberg131@gmail.com</a></p>
     <p>Independent project. Not affiliated with or endorsed by Icarus Robotics.</p>
   </footer>
 </body>

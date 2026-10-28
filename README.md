@@ -9,6 +9,7 @@ rest, using only a noisy pose sensor. Simulated in MuJoCo.
 a random axis, from either side), with a median contact speed of 1.9 cm/s and 2.5 N of grip.
 
 - Project page: [zero-g-catch.vercel.app](https://zero-g-catch.vercel.app)
+- **Try it live in your browser:** [zero-g-catch.vercel.app/sim](https://zero-g-catch.vercel.app/sim/)
 - One-page write-up: [docs/writeup.md](docs/writeup.md)
 - Demo video (42 s): [docs/media/catch_demo.mp4](docs/media/catch_demo.mp4)
 
@@ -87,6 +88,29 @@ python -m scripts.make_video        # -> out/catch_demo.mp4
   brake → stopped, or abort and re-plan).
 - `sim/evaluate.py`: one throw end to end, scored against ground truth.
 - `scripts/`: stage checks, live viewers, Monte Carlo, figures, video.
+- `site/`: the project page (static, deployed on Vercel); `site/sim/`: the live simulation.
+
+## Live simulation (site/sim)
+
+The page runs the whole system in the browser: MuJoCo 3.17 compiled to WebAssembly (the official
+`@mujoco/mujoco` package, in `site/sim/vendor/`), the controller ported to JavaScript
+(`site/sim/js/`: sensor and estimators, kinematics and planner, catcher, scoring), and three.js
+drawing the scene straight from MuJoCo's geometry. Visitors set speed, spin, aim, side and sensor
+noise and watch each throw live.
+
+- `python -m scripts.build_web_model` builds `site/sim/scene.mjb` (3.2 MB): the same scene with the
+  Panda's visual meshes simplified (each keeps at least 90% of its surface area). Collision shapes,
+  masses and actuators are untouched; the script checks the physical model arrays match exactly
+  and that a scripted 5 s run gives identical states. Needs `trimesh` and `fast-simplification`
+  (development only).
+- `python -m scripts.export_reference` runs 40 Monte Carlo throws with the sensor noise off and
+  saves their starting states and results; `node scripts/validate_web.mjs reference` replays
+  them in JavaScript. All 40 give the same outcome, plan time, catch time and contact speed,
+  including the re-plan and abort-and-retry cases.
+- `node scripts/validate_web.mjs mc 200`: 200 randomized throws with noise: 86.5% caught (Python:
+  85% of 300), contact speed 1.92 cm/s median (1.91), grip 2.5 N, braking 0.70 s (0.68).
+
+In the browser the planner takes ~0.1 s and the simulation runs about 10× faster than real time.
 
 ## Limits
 
