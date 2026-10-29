@@ -224,18 +224,38 @@
 
     <section class="section" id="next" aria-labelledby="next-title">
       <div class="section-head">
-        <p class="eyebrow">06 · Limits</p>
-        <h2 id="next-title">What comes next</h2>
+        <p class="eyebrow">06 · Limitations</p>
+        <h2 id="next-title">What the robot can't do (yet)</h2>
+        <p class="section-sub">The 85% holds inside the envelope it was tested in. Outside it, or
+          on real hardware, these are the walls it hits first, and what would move each one.</p>
       </div>
       <ul class="limits">
-        <li><span>Force control.</span> The stop is position control with bounded deceleration;
-          a wrist force/torque sensor with admittance control is the next step.</li>
-        <li><span>Joint limits.</span> The approach clips at limits instead of avoiding them,
-          behind some of the aborts.</li>
-        <li><span>Real-time planning.</span> About 0.5 s of pure-Python IK while the simulation
-          waits; compiled IK or a reachability map would remove it.</li>
-        <li><span>Perception.</span> A known rigid box and a pose sensor; vision, unknown inertia
-          and a free-floating base are the obvious extensions.</li>
+        <li><span>One workspace.</span> The base is fixed, so the catch has to happen within
+          0.82 m of the shoulder and 15 cm above the deck. A path that never crosses that zone
+          can't be caught: 8% of throws. A mobile or free-flying base would widen it.</li>
+        <li><span>Slow objects only.</span> Tested up to 15 cm/s drift and 30°/s spin. At
+          11–15 cm/s the catch rate drops to 76%: the arm needs up to 2.5 s to get into position
+          at the Panda's joint-speed limits, and fast throws are gone by then.</li>
+        <li><span>One object, one grip.</span> A known 5×5×15 cm, 0.5 kg rigid bar. The gripper
+          opens 8 cm, so it can only close across the bar's 5 cm faces. Larger, irregular,
+          flexible or unknown objects need a different hand and grasp planner.</li>
+        <li><span>Gentle stops, no force sensing.</span> Braking is capped at 0.3 m/s² and
+          1 rad/s² under position control, and grip force isn't measured, so a slip goes
+          unnoticed. Heavier or faster objects need a wrist force/torque sensor and admittance
+          control.</li>
+        <li><span>Joint limits.</span> The planner keeps clear of the stretched-elbow and wrist
+          singularities, but the approach clips at joint limits instead of planning around
+          them, behind some of the 5% aborted at the grasp gate.</li>
+        <li><span>Idealized sensing.</span> A 30 Hz pose sensor (5 mm / 2° noise, 5% dropout)
+          that always knows which object it sees. No cameras, occlusion, glare or model
+          fitting: vision is the biggest step to hardware.</li>
+        <li><span>Planning time.</span> About 0.5 s of pure-Python IK while the simulation
+          waits (about 0.1 s in the browser). Compiled IK or a precomputed reachability map
+          would make it real-time.</li>
+        <li><span>Simulation only.</span> The base is bolted to an inertial world, so the arm's
+          motion never pushes it back as it would on a free-floating spacecraft. No actuator
+          delay, joint flexibility or contact uncertainty beyond MuJoCo's model. Never run on
+          hardware.</li>
       </ul>
     </section>
 

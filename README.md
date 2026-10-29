@@ -112,9 +112,27 @@ noise and watch each throw live.
 
 In the browser the planner takes ~0.1 s and the simulation runs about 10× faster than real time.
 
-## Limits
+## Limitations
 
-The stop is position control with bounded deceleration, not force control (a wrist force/torque
-sensor with admittance control is the next step). The approach clips at joint limits instead of
-avoiding them, behind some of the aborts. Planning takes ~0.5 s of pure-Python IK while the
-simulation waits. The object is a known rigid box and the sensor reports its pose directly.
+The 85% holds inside the tested envelope. Outside it, or on hardware, these come first:
+
+- **One workspace.** Fixed base: the catch must happen within 0.82 m of the shoulder and 15 cm
+  above the deck. Paths that never cross that zone can't be caught (8% of throws).
+- **Slow objects only.** Tested to 15 cm/s drift and 30°/s spin. At 11–15 cm/s the catch rate
+  falls to 76%: the arm needs up to 2.5 s to get into position at the Panda's joint-speed
+  limits, and fast throws are gone by then.
+- **One object, one grip.** A known 5×5×15 cm, 0.5 kg rigid bar. The gripper opens 8 cm, so it
+  can only close across the 5 cm faces; larger, irregular, flexible or unknown objects need a
+  different hand and grasp planner.
+- **Gentle stops, no force sensing.** Braking is capped at 0.3 m/s² and 1 rad/s² under position
+  control, and grip force isn't measured, so a slip goes unnoticed. Heavier or faster objects
+  need a wrist force/torque sensor and admittance control.
+- **Joint limits.** The planner avoids the stretched-elbow and wrist singularities, but the
+  approach clips at joint limits instead of planning around them, behind some of the aborts.
+- **Idealized sensing.** A 30 Hz pose sensor (5 mm / 2° noise, 5% dropout) that always knows
+  which object it sees: no cameras, occlusion or model fitting.
+- **Planning time.** ~0.5 s of pure-Python IK while the simulation waits (~0.1 s in the
+  browser); compiled IK or a reachability map would make it real-time.
+- **Simulation only.** The base is fixed to an inertial world, so the arm's motion never pushes
+  it back as on a free-floating spacecraft. No actuator delay, joint flexibility or contact
+  uncertainty beyond MuJoCo's model. Never run on hardware.
